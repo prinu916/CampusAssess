@@ -1,0 +1,6 @@
+{
+  "name": "CampusTest - College Examination Platform",
+  "description": "Professional college examination and assessment platform for students and faculty featuring secure MCQ and coding tests, real-time timer, grading, and performance analytics.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
