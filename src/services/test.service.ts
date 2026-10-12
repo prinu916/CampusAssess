@@ -8,8 +8,28 @@ export const testService = {
     try {
       const stored = localStorage.getItem(TESTS_STORAGE_KEY);
       let tests: Test[] = stored ? JSON.parse(stored) : INITIAL_TESTS;
-      if (!stored) {
-        localStorage.setItem(TESTS_STORAGE_KEY, JSON.stringify(INITIAL_TESTS));
+
+      // Migrate or backfill tags and difficulty if missing on stored records
+      let hasMigrated = false;
+      tests = tests.map((t) => {
+        let changed = false;
+        let updated = { ...t };
+        if (!updated.difficulty) {
+          const matchInitial = INITIAL_TESTS.find((it) => it.id === t.id);
+          updated.difficulty = matchInitial?.difficulty || 'Intermediate';
+          changed = true;
+        }
+        if (!updated.tags || updated.tags.length === 0) {
+          const matchInitial = INITIAL_TESTS.find((it) => it.id === t.id);
+          updated.tags = matchInitial?.tags || [t.subject?.split(' ')[0] || 'General'];
+          changed = true;
+        }
+        if (changed) hasMigrated = true;
+        return updated;
+      });
+
+      if (!stored || hasMigrated) {
+        localStorage.setItem(TESTS_STORAGE_KEY, JSON.stringify(tests));
       }
 
       if (filter === 'all') return tests;
@@ -34,6 +54,8 @@ export const testService = {
           subject: data.subject || 'General Assessment',
           description: data.description || '',
           type: data.type || 'MCQ',
+          difficulty: data.difficulty || 'Intermediate',
+          tags: data.tags && data.tags.length > 0 ? data.tags : [data.subject || 'General'].filter(Boolean),
           duration: data.duration || 30,
           startTime: data.startTime || new Date().toISOString(),
           endTime: data.endTime || new Date(Date.now() + 7 * 86400000).toISOString(),

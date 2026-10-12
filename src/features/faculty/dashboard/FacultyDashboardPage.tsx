@@ -11,7 +11,11 @@ import {
   Edit,
   GraduationCap,
   Download,
+  ShieldAlert,
+  AlertTriangle,
+  ArrowRight,
 } from 'lucide-react';
+import { FacultyCategoryPerformanceWidget } from './FacultyCategoryPerformanceWidget';
 
 export function FacultyDashboardPage() {
   const { user } = useAuth();
@@ -85,6 +89,41 @@ export function FacultyDashboardPage() {
           </div>
           <span className="text-2xs text-slate-500 mt-1 block">Evaluated and finalized</span>
         </div>
+      </div>
+
+      {/* Cohort Category Performance Analytics (Recharts Widget) */}
+      <FacultyCategoryPerformanceWidget />
+
+      {/* Proctoring & Tab-Switching Security Monitor */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex items-start gap-3.5">
+          <div className="w-10 h-10 rounded-lg bg-red-100 dark:bg-red-950/80 text-red-700 dark:text-red-400 flex items-center justify-center shrink-0">
+            <ShieldAlert className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                Proctoring & Tab-Switching Integrity Monitor
+              </h3>
+              <span className="font-mono text-2xs font-semibold px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300">
+                Active Audit
+              </span>
+            </div>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              Automated surveillance logged browser tab switching, focus loss (Alt+Tab), and clipboard interception during active exam sessions.
+            </p>
+          </div>
+        </div>
+
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => navigate('/faculty/proctoring')}
+          className="gap-1.5 text-xs font-semibold shrink-0"
+        >
+          <span>Review Incident Logs</span>
+          <ArrowRight className="w-3.5 h-3.5" />
+        </Button>
       </div>
 
       {/* Your Tests Table */}

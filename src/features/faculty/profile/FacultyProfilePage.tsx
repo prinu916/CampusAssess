@@ -20,12 +20,13 @@ import {
   Briefcase,
   Building,
   GraduationCap,
+  RefreshCw,
 } from 'lucide-react';
 
 const DEMO_FACULTY_OTP = '918234';
 
 export function FacultyProfilePage({ isSetup = false }: { isSetup?: boolean }) {
-  const { verifyAndComplete, completeProfile, isVerified } = useAuth();
+  const { verifyAndComplete, completeProfile, isVerified, resetVerification } = useAuth();
   const { navigate } = useRouter();
   const { toast } = useToast();
 
@@ -173,15 +174,30 @@ export function FacultyProfilePage({ isSetup = false }: { isSetup?: boolean }) {
         </div>
 
         {!isSetup && !isEditing && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setIsEditing(true)}
-            className="text-xs"
-          >
-            <Edit3 className="w-3.5 h-3.5 mr-1.5" />
-            Edit Profile
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                resetVerification();
+                navigate('/faculty/profile/setup');
+              }}
+              title="Test the first-time onboarding and verification flow"
+              className="text-xs text-slate-600 dark:text-slate-400 gap-1.5"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              <span>Test Onboarding Flow</span>
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsEditing(true)}
+              className="text-xs"
+            >
+              <Edit3 className="w-3.5 h-3.5 mr-1.5" />
+              Edit Profile
+            </Button>
+          </div>
         )}
       </div>
 

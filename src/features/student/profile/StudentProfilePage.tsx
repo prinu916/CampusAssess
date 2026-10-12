@@ -27,7 +27,7 @@ import {
 const DEMO_OTP = '849201';
 
 export function StudentProfilePage({ isSetup = false }: { isSetup?: boolean }) {
-  const { verifyAndComplete, completeProfile, isVerified } = useAuth();
+  const { verifyAndComplete, completeProfile, isVerified, resetVerification } = useAuth();
   const { navigate } = useRouter();
   const { toast } = useToast();
 
@@ -138,7 +138,7 @@ export function StudentProfilePage({ isSetup = false }: { isSetup?: boolean }) {
 
       toast({
         title: 'Verification Approved',
-        description: 'Institutional credentials verified! Entry to CampusTest dashboard unlocked.',
+        description: 'Institutional credentials verified! Entry to CampusAssess dashboard unlocked.',
         type: 'success',
       });
 
@@ -194,6 +194,19 @@ export function StudentProfilePage({ isSetup = false }: { isSetup?: boolean }) {
 
         {!isSetup && !isEditing && (
           <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                resetVerification();
+                navigate('/student/profile/setup');
+              }}
+              title="Test the first-time onboarding and verification flow"
+              className="text-xs text-slate-600 dark:text-slate-400 gap-1.5"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              <span>Test Onboarding Flow</span>
+            </Button>
             <Button
               variant="outline"
               size="sm"

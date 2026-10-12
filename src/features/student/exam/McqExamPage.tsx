@@ -4,8 +4,10 @@ import { useAuth } from '../../../hooks/useAuth';
 import { testService } from '../../../services/test.service';
 import { resultService } from '../../../services/result.service';
 import { useExamTimer } from '../../../hooks/useExamTimer';
+import { useExamAutoSave } from '../../../hooks/useExamAutoSave';
 import { ProctoringAssistant } from '../../../components/exam/ProctoringAssistant';
 import { ExamProgressBar } from '../../../components/exam/ExamProgressBar';
+import { ExamTimeAlertBanner } from '../../../components/exam/ExamTimeAlertBanner';
 import { ProctoringEvent } from '../../../types/result.types';
 import { Button } from '../../../components/ui/Button';
 import { Modal } from '../../../components/ui/Modal';
@@ -19,6 +21,8 @@ import {
   ShieldCheck,
   Send,
   Save,
+  Volume2,
+  VolumeX,
 } from 'lucide-react';
 
 export function McqExamPage({
@@ -42,8 +46,32 @@ export function McqExamPage({
   const totalQuestions = questions.length;
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, 'A' | 'B' | 'C' | 'D'>>({});
-  const [isAutoSaving, setIsAutoSaving] = useState(false);
-  const [lastSavedTime, setLastSavedTime] = useState<string>('Just now');
+  const [showRestoredNotice, setShowRestoredNotice] = useState(false);
+
+  // Background auto-save setup
+  const autoSaveKey = `campusassess_autosave_mcq_${testId}_${user?.id || 'usr_student_01'}`;
+  const {
+    isAutoSaving,
+    lastSavedTime,
+    hasRestored,
+    saveImmediately,
+    clearSavedData,
+  } = useExamAutoSave<{ answers: Record<string, 'A' | 'B' | 'C' | 'D'>; questionIdx: number }>({
+    key: autoSaveKey,
+    data: { answers: selectedAnswers, questionIdx: currentIndex },
+    intervalMs: 4000,
+    enabled: true,
+    onRestore: (restored) => {
+      if (restored && restored.answers && Object.keys(restored.answers).length > 0) {
+        setSelectedAnswers(restored.answers);
+        if (typeof restored.questionIdx === 'number') {
+          setCurrentIndex(restored.questionIdx);
+        }
+        setShowRestoredNotice(true);
+        setTimeout(() => setShowRestoredNotice(false), 5000);
+      }
+    },
+  });
 
   // Modals state
   const [showConfirmSubmit, setShowConfirmSubmit] = useState(false);
@@ -56,6 +84,7 @@ export function McqExamPage({
   // Auto-submit simulation on timer expiration
   const handleTimeout = useCallback(() => {
     setShowTimeoutModal(true);
+    clearSavedData();
     // Execute auto-submit
     setTimeout(async () => {
       const studentInfo = {
@@ -75,9 +104,19 @@ export function McqExamPage({
       setCreatedResultId(res.id);
       setIsSubmitted(true);
     }, 1500);
-  }, [test, selectedAnswers, user, recordedEvents]);
+  }, [test, selectedAnswers, user, recordedEvents, clearSavedData]);
 
-  const { formattedTime, isWarning, timeSpentSeconds, stopTimer, secondsRemaining } = useExamTimer({
+  const {
+    formattedTime,
+    isWarning,
+    timeSpentSeconds,
+    stopTimer,
+    secondsRemaining,
+    activeAlert,
+    dismissAlert,
+    isMuted,
+    toggleMute,
+  } = useExamTimer({
     durationMinutes: test.duration,
     onTimeout: handleTimeout,
     warningThresholdSeconds: 300,
@@ -89,13 +128,7 @@ export function McqExamPage({
     if (isSubmitted) return;
     const newAnswers = { ...selectedAnswers, [currentQuestion.id]: optionId };
     setSelectedAnswers(newAnswers);
-
-    // Simulate autosave
-    setIsAutoSaving(true);
-    setTimeout(() => {
-      setIsAutoSaving(false);
-      setLastSavedTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
-    }, 300);
+    saveImmediately({ answers: newAnswers, questionIdx: currentIndex });
   };
 
   const handleClearAnswer = () => {
@@ -103,6 +136,7 @@ export function McqExamPage({
     const next = { ...selectedAnswers };
     delete next[currentQuestion.id];
     setSelectedAnswers(next);
+    saveImmediately({ answers: next, questionIdx: currentIndex });
   };
 
   const handleNext = () => {
@@ -119,6 +153,7 @@ export function McqExamPage({
 
   const handleManualSubmit = async () => {
     stopTimer();
+    clearSavedData();
     setIsSubmitting(true);
     const studentInfo = {
       id: user?.id || 'usr_student_01',
@@ -182,8 +217,24 @@ export function McqExamPage({
           <span>{isAutoSaving ? 'Saving answer...' : `Auto-saved at ${lastSavedTime}`}</span>
         </div>
 
-        {/* Right: Timer & Submit Action */}
-        <div className="flex items-center gap-3">
+        {/* Right: Auto-save status, Timer & Submit Action */}
+        <div className="flex items-center gap-2 sm:gap-3">
+          {/* Background Auto-Save Status Badge */}
+          <div
+            title="Your progress is continuously auto-saved to local state"
+            className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 text-2xs rounded-full border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-600 dark:text-slate-300 transition-all font-mono"
+          >
+            <span
+              className={cn(
+                'w-2 h-2 rounded-full transition-colors',
+                isAutoSaving ? 'bg-amber-500 animate-ping' : 'bg-emerald-500'
+              )}
+            />
+            <span className="tabular-nums">
+              {isAutoSaving ? 'Auto-saving...' : `Saved: ${lastSavedTime}`}
+            </span>
+          </div>
+
           <div
             className={cn(
               'flex items-center gap-2 px-3 py-1.5 rounded-md border font-mono font-bold text-sm tabular-nums transition-colors',
@@ -194,6 +245,16 @@ export function McqExamPage({
           >
             <Clock className={cn('w-4 h-4', isWarning ? 'text-red-600 dark:text-red-400' : 'text-slate-500 dark:text-slate-400')} />
             <span>{formattedTime}</span>
+
+            <button
+              type="button"
+              onClick={toggleMute}
+              title={isMuted ? 'Notification audio muted - click to unmute' : 'Audio alerts enabled - click to mute'}
+              className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded transition-colors ml-1 cursor-pointer"
+              aria-label={isMuted ? 'Unmute alerts' : 'Mute alerts'}
+            >
+              {isMuted ? <VolumeX className="w-3.5 h-3.5 text-slate-400" /> : <Volume2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />}
+            </button>
           </div>
 
           <Button
@@ -208,6 +269,32 @@ export function McqExamPage({
           </Button>
         </div>
       </header>
+
+      {/* 50%, 25%, AND 5 MINUTES REMAINING VISUAL & AUDIO ALERT BANNER */}
+      <ExamTimeAlertBanner
+        alert={activeAlert}
+        onDismiss={dismissAlert}
+        isMuted={isMuted}
+        onToggleMute={toggleMute}
+      />
+
+      {/* AUTO-SAVE RESTORE NOTIFICATION BANNER */}
+      {showRestoredNotice && (
+        <div className="bg-emerald-50 dark:bg-emerald-950/80 border-b border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 px-4 py-2 text-xs flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+            <span>
+              <strong>Draft Recovered:</strong> Your previous MCQ answers and exam progress have been restored from local storage.
+            </span>
+          </div>
+          <button
+            onClick={() => setShowRestoredNotice(false)}
+            className="text-2xs text-emerald-700 dark:text-emerald-300 hover:underline font-semibold"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
       {/* DYNAMIC PROGRESS BAR FOR REMAINING TIME & QUESTIONS STATUS */}
       <ExamProgressBar

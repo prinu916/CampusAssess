@@ -4,8 +4,10 @@ import { useAuth } from '../../../hooks/useAuth';
 import { testService } from '../../../services/test.service';
 import { resultService } from '../../../services/result.service';
 import { useExamTimer } from '../../../hooks/useExamTimer';
+import { useExamAutoSave } from '../../../hooks/useExamAutoSave';
 import { ProctoringAssistant } from '../../../components/exam/ProctoringAssistant';
 import { ExamProgressBar } from '../../../components/exam/ExamProgressBar';
+import { ExamTimeAlertBanner } from '../../../components/exam/ExamTimeAlertBanner';
 import { ProctoringEvent } from '../../../types/result.types';
 import { Button } from '../../../components/ui/Button';
 import { Modal } from '../../../components/ui/Modal';
@@ -21,6 +23,8 @@ import {
   Terminal,
   FileCode,
   Check,
+  Volume2,
+  VolumeX,
 } from 'lucide-react';
 
 export function CodingExamPage({
@@ -53,6 +57,53 @@ export function CodingExamPage({
     return initial;
   });
 
+  const [problemVerdicts, setProblemVerdicts] = useState<
+    Record<string, { status: string; passedCount: number; totalCount: number; score: number }>
+  >({});
+  const [showRestoredNotice, setShowRestoredNotice] = useState(false);
+
+  // Background auto-save setup for coding exam
+  const autoSaveKey = `campusassess_autosave_coding_${testId}_${user?.id || 'usr_student_01'}`;
+  const {
+    isAutoSaving,
+    lastSavedTime,
+    saveImmediately,
+    clearSavedData,
+  } = useExamAutoSave<{
+    code: Record<string, Record<string, string>>;
+    language: string;
+    problemIdx: number;
+    verdicts: Record<string, any>;
+  }>({
+    key: autoSaveKey,
+    data: {
+      code: codeByProblemAndLang,
+      language: selectedLanguage,
+      problemIdx: currentProblemIdx,
+      verdicts: problemVerdicts,
+    },
+    intervalMs: 4000,
+    enabled: true,
+    onRestore: (restored) => {
+      if (restored) {
+        if (restored.code && Object.keys(restored.code).length > 0) {
+          setCodeByProblemAndLang(restored.code);
+        }
+        if (restored.language) {
+          setSelectedLanguage(restored.language);
+        }
+        if (typeof restored.problemIdx === 'number') {
+          setCurrentProblemIdx(restored.problemIdx);
+        }
+        if (restored.verdicts) {
+          setProblemVerdicts(restored.verdicts);
+        }
+        setShowRestoredNotice(true);
+        setTimeout(() => setShowRestoredNotice(false), 5000);
+      }
+    },
+  });
+
   // Code editor text
   const currentCode =
     codeByProblemAndLang[currentProblem?.id]?.[selectedLanguage] ||
@@ -60,13 +111,20 @@ export function CodingExamPage({
     '';
 
   const handleCodeChange = (newCode: string) => {
-    setCodeByProblemAndLang((prev) => ({
-      ...prev,
+    const updated = {
+      ...codeByProblemAndLang,
       [currentProblem.id]: {
-        ...prev[currentProblem.id],
+        ...codeByProblemAndLang[currentProblem.id],
         [selectedLanguage]: newCode,
       },
-    }));
+    };
+    setCodeByProblemAndLang(updated);
+    saveImmediately({
+      code: updated,
+      language: selectedLanguage,
+      problemIdx: currentProblemIdx,
+      verdicts: problemVerdicts,
+    });
   };
 
   const handleResetCode = () => {
@@ -90,11 +148,6 @@ export function CodingExamPage({
     stdout: '',
   });
 
-  // Track per-problem submission results
-  const [problemVerdicts, setProblemVerdicts] = useState<
-    Record<string, { status: string; passedCount: number; totalCount: number; score: number }>
-  >({});
-
   // Modals state
   const [showConfirmSubmit, setShowConfirmSubmit] = useState(false);
   const [showTimeoutModal, setShowTimeoutModal] = useState(false);
@@ -106,6 +159,7 @@ export function CodingExamPage({
   // Auto-submit simulation on timer expiration
   const handleTimeout = useCallback(() => {
     setShowTimeoutModal(true);
+    clearSavedData();
     setTimeout(async () => {
       const studentInfo = {
         id: user?.id || 'usr_student_01',
@@ -140,7 +194,17 @@ export function CodingExamPage({
     }, 1500);
   }, [test, problems, problemVerdicts, codeByProblemAndLang, selectedLanguage, user, recordedEvents]);
 
-  const { formattedTime, isWarning, timeSpentSeconds, stopTimer, secondsRemaining } = useExamTimer({
+  const {
+    formattedTime,
+    isWarning,
+    timeSpentSeconds,
+    stopTimer,
+    secondsRemaining,
+    activeAlert,
+    dismissAlert,
+    isMuted,
+    toggleMute,
+  } = useExamTimer({
     durationMinutes: test.duration,
     onTimeout: handleTimeout,
     warningThresholdSeconds: 300,
@@ -208,6 +272,7 @@ export function CodingExamPage({
   // Final Exam submission
   const handleFinalSubmit = async () => {
     stopTimer();
+    clearSavedData();
     setIsFinalSubmitting(true);
     const studentInfo = {
       id: user?.id || 'usr_student_01',
@@ -301,8 +366,24 @@ export function CodingExamPage({
           })}
         </div>
 
-        {/* Timer & Submit Exam */}
-        <div className="flex items-center gap-3">
+        {/* Auto-Save Status, Timer & Submit Exam */}
+        <div className="flex items-center gap-2 sm:gap-3">
+          {/* Background Auto-Save Status Badge */}
+          <div
+            title="Your code and assessment progress are continuously auto-saved"
+            className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 text-2xs rounded-full border border-slate-700 bg-slate-900/90 text-slate-300 font-mono"
+          >
+            <span
+              className={cn(
+                'w-2 h-2 rounded-full transition-colors',
+                isAutoSaving ? 'bg-amber-400 animate-ping' : 'bg-emerald-400'
+              )}
+            />
+            <span className="tabular-nums">
+              {isAutoSaving ? 'Auto-saving code...' : `Saved: ${lastSavedTime}`}
+            </span>
+          </div>
+
           <div
             className={cn(
               'flex items-center gap-2 px-3 py-1.5 rounded-md border font-mono font-bold text-sm tabular-nums',
@@ -313,6 +394,16 @@ export function CodingExamPage({
           >
             <Clock className={cn('w-4 h-4', isWarning ? 'text-red-400' : 'text-slate-400')} />
             <span>{formattedTime}</span>
+
+            <button
+              type="button"
+              onClick={toggleMute}
+              title={isMuted ? 'Notification audio muted - click to unmute' : 'Audio alerts enabled - click to mute'}
+              className="p-1 text-slate-400 hover:text-white rounded transition-colors ml-1 cursor-pointer"
+              aria-label={isMuted ? 'Unmute alerts' : 'Mute alerts'}
+            >
+              {isMuted ? <VolumeX className="w-3.5 h-3.5 text-slate-500" /> : <Volume2 className="w-3.5 h-3.5 text-emerald-400" />}
+            </button>
           </div>
 
           <Button
@@ -326,6 +417,32 @@ export function CodingExamPage({
           </Button>
         </div>
       </header>
+
+      {/* 50%, 25%, AND 5 MINUTES REMAINING VISUAL & AUDIO ALERT BANNER */}
+      <ExamTimeAlertBanner
+        alert={activeAlert}
+        onDismiss={dismissAlert}
+        isMuted={isMuted}
+        onToggleMute={toggleMute}
+      />
+
+      {/* AUTO-SAVE RESTORE NOTIFICATION BANNER */}
+      {showRestoredNotice && (
+        <div className="bg-emerald-950/90 border-b border-emerald-800 text-emerald-200 px-4 py-2 text-xs flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span>
+              <strong>Draft Recovered:</strong> Your previous code solutions and problem status have been safely restored.
+            </span>
+          </div>
+          <button
+            onClick={() => setShowRestoredNotice(false)}
+            className="text-2xs text-emerald-400 hover:underline font-semibold"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
       {/* DYNAMIC PROGRESS BAR FOR REMAINING TIME & PROBLEM STATUS */}
       <ExamProgressBar

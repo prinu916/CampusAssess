@@ -55,12 +55,16 @@ export interface TestAccess {
   section?: string;
 }
 
+export type TestDifficulty = 'Beginner' | 'Intermediate' | 'Advanced' | 'Expert';
+
 export interface Test {
   id: string;
   title: string;
   subject: string;
   description: string;
   type: TestType;
+  difficulty?: TestDifficulty;
+  tags?: string[];
   duration: number; // in minutes
   startTime: string;
   endTime: string;

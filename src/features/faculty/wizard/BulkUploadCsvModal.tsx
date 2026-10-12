@@ -235,7 +235,7 @@ export function BulkUploadCsvModal({
     link.href = url;
     link.setAttribute(
       'download',
-      testType === 'MCQ' ? 'campustest_mcq_template.csv' : 'campustest_coding_template.csv'
+      testType === 'MCQ' ? 'campusassess_mcq_template.csv' : 'campusassess_coding_template.csv'
     );
     document.body.appendChild(link);
     link.click();
@@ -327,7 +327,7 @@ export function BulkUploadCsvModal({
           <div className="space-y-1">
             <h4 className="text-xs font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
               <FileSpreadsheet className="w-4 h-4 text-red-700 dark:text-red-400" />
-              Standardized CampusTest CSV Format
+              Standardized CampusAssess CSV Format
             </h4>
             <p className="text-2xs text-slate-500 dark:text-slate-400 max-w-md">
               {testType === 'MCQ'

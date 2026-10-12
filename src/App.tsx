@@ -30,7 +30,9 @@ import { FacultyDashboardPage } from './features/faculty/dashboard/FacultyDashbo
 import { FacultyTestListPage } from './features/faculty/tests/FacultyTestListPage';
 import { CreateTestWizard } from './features/faculty/wizard/CreateTestWizard';
 import { FacultyResultsPage } from './features/faculty/results/FacultyResultsPage';
+import { FacultyProctoringPage } from './features/faculty/proctoring/FacultyProctoringPage';
 import { FacultyExportPage } from './features/faculty/export/FacultyExportPage';
+import { CampusAssessAiBot } from './components/ai/CampusAssessAiBot';
 
 function AppContent() {
   const { path } = useRouter();
@@ -272,6 +274,14 @@ function AppContent() {
     );
   }
 
+  if (path === '/faculty/proctoring') {
+    return (
+      <FacultyLayout>
+        <FacultyProctoringPage />
+      </FacultyLayout>
+    );
+  }
+
   if (path === '/faculty/export') {
     return (
       <FacultyLayout>
@@ -291,6 +301,7 @@ export default function App() {
         <AuthProvider>
           <ToastProvider>
             <AppContent />
+            <CampusAssessAiBot />
           </ToastProvider>
         </AuthProvider>
       </RouterProvider>

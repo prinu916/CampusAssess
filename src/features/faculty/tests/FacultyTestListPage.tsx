@@ -33,7 +33,8 @@ export function FacultyTestListPage() {
         const q = search.toLowerCase();
         const matchesTitle = t.title.toLowerCase().includes(q);
         const matchesSubject = t.subject.toLowerCase().includes(q);
-        if (!matchesTitle && !matchesSubject) return false;
+        const matchesTags = (t.tags || []).some((tag) => tag.toLowerCase().includes(q));
+        if (!matchesTitle && !matchesSubject && !matchesTags) return false;
       }
       return true;
     });
@@ -179,7 +180,32 @@ export function FacultyTestListPage() {
                       <span className="text-3xs text-slate-400 font-mono">ID: {test.id}</span>
                     </td>
 
-                    <td className="py-3 px-4 text-slate-600">{test.subject}</td>
+                    <td className="py-3 px-4">
+                      <span className="text-slate-800 font-medium block">{test.subject}</span>
+                      <div className="flex items-center gap-1.5 flex-wrap mt-1">
+                        <span className={`text-3xs font-semibold px-1.5 py-0.2 rounded ${
+                          test.difficulty === 'Beginner'
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                            : test.difficulty === 'Advanced'
+                            ? 'bg-purple-50 text-purple-700 border border-purple-200'
+                            : test.difficulty === 'Expert'
+                            ? 'bg-rose-50 text-rose-700 border border-rose-200'
+                            : 'bg-sky-50 text-sky-700 border border-sky-200'
+                        }`}>
+                          {test.difficulty || 'Intermediate'}
+                        </span>
+                        {(test.tags || []).slice(0, 3).map((tag) => (
+                          <span key={tag} className="text-3xs text-slate-500 bg-slate-100 px-1 rounded border border-slate-200">
+                            #{tag}
+                          </span>
+                        ))}
+                        {(test.tags || []).length > 3 && (
+                          <span className="text-3xs text-slate-400">
+                            +{(test.tags || []).length - 3}
+                          </span>
+                        )}
+                      </div>
+                    </td>
 
                     <td className="py-3 px-4">
                       <span className="font-mono text-2xs font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded">

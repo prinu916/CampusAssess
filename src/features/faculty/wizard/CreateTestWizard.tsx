@@ -4,7 +4,7 @@ import { useAuth } from '../../../hooks/useAuth';
 import { useToast } from '../../../hooks/useToast';
 import { testService } from '../../../services/test.service';
 import { studentService } from '../../../services/student.service';
-import { Test, McqQuestion, CodingProblem, TestCase, CodingExample } from '../../../types/test.types';
+import { Test, TestDifficulty, McqQuestion, CodingProblem, TestCase, CodingExample } from '../../../types/test.types';
 import { StudentProfile } from '../../../types/student.types';
 import { Button } from '../../../components/ui/Button';
 import { Input } from '../../../components/ui/Input';
@@ -24,6 +24,11 @@ import {
   Users,
   Search,
   Upload,
+  Tag,
+  X,
+  Sliders,
+  Layers,
+  Sparkles,
 } from 'lucide-react';
 import { BulkUploadCsvModal } from './BulkUploadCsvModal';
 
@@ -41,6 +46,8 @@ export function CreateTestWizard({ editTestId }: { editTestId?: string }) {
     subject: '',
     description: '',
     type: 'MCQ',
+    difficulty: 'Intermediate',
+    tags: ['Computer Science'],
     duration: 30,
     startTime: new Date().toISOString().slice(0, 16),
     endTime: new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 16),
@@ -63,12 +70,59 @@ export function CreateTestWizard({ editTestId }: { editTestId?: string }) {
     status: 'available',
   });
 
+  // Tag input state & popular subject recommendations
+  const [tagInput, setTagInput] = useState('');
+
+  const POPULAR_TAGS = [
+    'Java',
+    'Python',
+    'C++',
+    'Data Structures',
+    'Algorithms',
+    'Dynamic Programming',
+    'DBMS',
+    'SQL',
+    'Operating Systems',
+    'Computer Networks',
+    'Web Development',
+    'Cloud Computing',
+    'Machine Learning',
+    'Cybersecurity',
+    'Object-Oriented Programming',
+  ];
+
+  const handleAddTag = (tagToAdd?: string) => {
+    const raw = (tagToAdd || tagInput).trim();
+    if (!raw) return;
+    const currentTags = testData.tags || [];
+    if (currentTags.some((t) => t.toLowerCase() === raw.toLowerCase())) {
+      setTagInput('');
+      return;
+    }
+    setTestData((prev) => ({
+      ...prev,
+      tags: [...(prev.tags || []), raw],
+    }));
+    setTagInput('');
+  };
+
+  const handleRemoveTag = (tagToRemove: string) => {
+    setTestData((prev) => ({
+      ...prev,
+      tags: (prev.tags || []).filter((t) => t !== tagToRemove),
+    }));
+  };
+
   // Load existing test if editing
   useEffect(() => {
     if (editTestId) {
       const existing = testService.getTestById(editTestId);
       if (existing) {
-        setTestData(existing);
+        setTestData({
+          ...existing,
+          difficulty: existing.difficulty || 'Intermediate',
+          tags: existing.tags && existing.tags.length > 0 ? existing.tags : [existing.subject || 'Computer Science'],
+        });
       }
     }
     studentService.getAllStudents().then(setStudents);
@@ -444,6 +498,181 @@ export function CreateTestWizard({ editTestId }: { editTestId?: string }) {
               onChange={(e) => setTestData({ ...testData, maxMarks: parseInt(e.target.value) || 0 })}
               required
             />
+          </div>
+
+          {/* Categorization & Tags Section */}
+          <div className="pt-4 border-t border-slate-100 space-y-4">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <Sliders className="w-4 h-4 text-slate-600" />
+                <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wide">
+                  Difficulty Level
+                </h3>
+              </div>
+              <p className="text-2xs text-slate-500 mb-3">
+                Sets the expected mastery benchmark shown to enrolled candidates and in performance dashboards.
+              </p>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                {[
+                  {
+                    id: 'Beginner' as TestDifficulty,
+                    label: 'Beginner',
+                    desc: 'Foundational syntax & definitions',
+                    color: 'emerald',
+                    activeClass: 'border-emerald-600 bg-emerald-50/80 text-emerald-900 ring-2 ring-emerald-500/30',
+                    dot: 'bg-emerald-500',
+                  },
+                  {
+                    id: 'Intermediate' as TestDifficulty,
+                    label: 'Intermediate',
+                    desc: 'Standard curriculum & problem solving',
+                    color: 'sky',
+                    activeClass: 'border-sky-600 bg-sky-50/80 text-sky-900 ring-2 ring-sky-500/30',
+                    dot: 'bg-sky-500',
+                  },
+                  {
+                    id: 'Advanced' as TestDifficulty,
+                    label: 'Advanced',
+                    desc: 'Complex algorithms & edge cases',
+                    color: 'purple',
+                    activeClass: 'border-purple-600 bg-purple-50/80 text-purple-900 ring-2 ring-purple-500/30',
+                    dot: 'bg-purple-500',
+                  },
+                  {
+                    id: 'Expert' as TestDifficulty,
+                    label: 'Expert',
+                    desc: 'High-level competitive mastery',
+                    color: 'rose',
+                    activeClass: 'border-rose-600 bg-rose-50/80 text-rose-900 ring-2 ring-rose-500/30',
+                    dot: 'bg-rose-500',
+                  },
+                ].map((diff) => {
+                  const isSelected = (testData.difficulty || 'Intermediate') === diff.id;
+                  return (
+                    <button
+                      type="button"
+                      key={diff.id}
+                      onClick={() => setTestData({ ...testData, difficulty: diff.id })}
+                      className={`p-3 rounded-lg border text-left transition-all cursor-pointer ${
+                        isSelected
+                          ? diff.activeClass
+                          : 'border-slate-200 bg-slate-50/60 hover:bg-slate-100/70 text-slate-700'
+                      }`}
+                    >
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <span className={`w-2 h-2 rounded-full ${diff.dot}`} />
+                        <span className="text-xs font-bold">{diff.label}</span>
+                      </div>
+                      <p className="text-3xs text-slate-500 leading-tight">
+                        {diff.desc}
+                      </p>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Subject & Topic Tags */}
+            <div className="space-y-2.5 pt-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Tag className="w-4 h-4 text-slate-600" />
+                  <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wide">
+                    Subject & Topic Tags
+                  </h3>
+                </div>
+                <span className="text-2xs text-slate-500">
+                  {(testData.tags || []).length} tag(s) assigned
+                </span>
+              </div>
+              <p className="text-2xs text-slate-500">
+                Categorize this assessment by topics or languages to help students discover and filter tests in their catalog.
+              </p>
+
+              {/* Active Tags Pills */}
+              <div className="flex flex-wrap items-center gap-1.5 min-h-[32px] p-2 bg-slate-50 rounded-md border border-slate-200">
+                {(testData.tags || []).length === 0 ? (
+                  <span className="text-2xs text-slate-400 italic">
+                    No tags added yet. Choose from suggestions below or type a custom tag.
+                  </span>
+                ) : (
+                  (testData.tags || []).map((tag) => (
+                    <span
+                      key={tag}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-2xs font-semibold bg-white border border-slate-300 text-slate-800 shadow-2xs group"
+                    >
+                      <Tag className="w-3 h-3 text-red-600" />
+                      <span>{tag}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveTag(tag)}
+                        className="text-slate-400 hover:text-red-600 ml-0.5 rounded-full p-0.5 transition-colors cursor-pointer"
+                        title={`Remove tag ${tag}`}
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  ))
+                )}
+              </div>
+
+              {/* Add Custom Tag Input */}
+              <div className="flex items-center gap-2 pt-1">
+                <input
+                  type="text"
+                  value={tagInput}
+                  onChange={(e) => setTagInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleAddTag();
+                    }
+                  }}
+                  placeholder="Type topic or custom tag (e.g. Recursion, Microservices, React)..."
+                  className="h-8 px-3 text-xs rounded border border-slate-300 bg-white text-slate-800 placeholder:text-slate-400 flex-1 focus:outline-none focus:ring-2 focus:ring-red-600"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleAddTag()}
+                  className="gap-1 text-xs shrink-0"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Add Tag</span>
+                </Button>
+              </div>
+
+              {/* Suggested Tags */}
+              <div className="pt-2">
+                <span className="text-3xs font-bold text-slate-400 uppercase tracking-wider block mb-1.5">
+                  Popular Suggested Categories:
+                </span>
+                <div className="flex flex-wrap gap-1.5">
+                  {POPULAR_TAGS.map((suggested) => {
+                    const isAdded = (testData.tags || []).some(
+                      (t) => t.toLowerCase() === suggested.toLowerCase()
+                    );
+                    return (
+                      <button
+                        type="button"
+                        key={suggested}
+                        onClick={() => !isAdded && handleAddTag(suggested)}
+                        disabled={isAdded}
+                        className={`text-2xs px-2 py-0.5 rounded border transition-colors cursor-pointer ${
+                          isAdded
+                            ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed line-through opacity-70'
+                            : 'bg-white hover:bg-slate-100 text-slate-600 hover:text-slate-900 border-slate-300 hover:border-slate-400'
+                        }`}
+                      >
+                        + {suggested}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -868,6 +1097,37 @@ export function CreateTestWizard({ editTestId }: { editTestId?: string }) {
             <div className="flex items-center justify-between py-1 border-b border-slate-100">
               <span className="font-semibold text-slate-700">Subject:</span>
               <span>{testData.subject}</span>
+            </div>
+            <div className="flex items-center justify-between py-1 border-b border-slate-100">
+              <span className="font-semibold text-slate-700">Difficulty Level:</span>
+              <span className={`px-2 py-0.5 rounded text-2xs font-bold uppercase tracking-wider ${
+                testData.difficulty === 'Beginner'
+                  ? 'bg-emerald-100 text-emerald-800'
+                  : testData.difficulty === 'Advanced'
+                  ? 'bg-purple-100 text-purple-800'
+                  : testData.difficulty === 'Expert'
+                  ? 'bg-rose-100 text-rose-800'
+                  : 'bg-sky-100 text-sky-800'
+              }`}>
+                {testData.difficulty || 'Intermediate'}
+              </span>
+            </div>
+            <div className="flex items-center justify-between py-1 border-b border-slate-100">
+              <span className="font-semibold text-slate-700">Categorization Tags:</span>
+              <div className="flex flex-wrap gap-1 justify-end max-w-xs">
+                {(testData.tags || []).length > 0 ? (
+                  testData.tags!.map((t) => (
+                    <span
+                      key={t}
+                      className="px-2 py-0.5 rounded text-3xs font-medium bg-slate-100 text-slate-700 border border-slate-200"
+                    >
+                      #{t}
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-slate-400 italic">None</span>
+                )}
+              </div>
             </div>
             <div className="flex items-center justify-between py-1 border-b border-slate-100">
               <span className="font-semibold text-slate-700">Candidate Access:</span>

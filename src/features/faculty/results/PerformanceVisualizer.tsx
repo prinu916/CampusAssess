@@ -55,7 +55,7 @@ export function PerformanceVisualizer({ test, results }: PerformanceVisualizerPr
     `[Action Required] Pending Assessment: ${test.title} closes soon`
   );
   const [reminderMessage, setReminderMessage] = useState(
-    `Dear {studentName},\n\nThis is an automated reminder from the Academic Examination Cell. Your assessment "{testTitle}" is currently open and requires completion.\n\nTest Duration: ${test.duration} Minutes.\nPlease log in to CampusTest and complete your submission before the window closes.\n\nDepartment of Computer Science & Engineering`
+    `Dear {studentName},\n\nThis is an automated reminder from the Academic Examination Cell. Your assessment "{testTitle}" is currently open and requires completion.\n\nTest Duration: ${test.duration} Minutes.\nPlease log in to CampusAssess and complete your submission before the window closes.\n\nDepartment of Computer Science & Engineering`
   );
 
   // Generate or load AI difficulty report

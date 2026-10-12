@@ -6,6 +6,7 @@ import {
   LayoutDashboard,
   FolderKanban,
   GraduationCap,
+  ShieldAlert,
   Download,
   User,
   LogOut,
@@ -24,6 +25,7 @@ export function FacultyLayout({ children }: { children: React.ReactNode }) {
     { label: 'Dashboard', path: '/faculty/dashboard', icon: LayoutDashboard },
     { label: 'Tests', path: '/faculty/tests', icon: FolderKanban },
     { label: 'Results', path: '/faculty/results', icon: GraduationCap },
+    { label: 'Proctoring Review', path: '/faculty/proctoring', icon: ShieldAlert },
     { label: 'Export', path: '/faculty/export', icon: Download },
     { label: 'Profile', path: '/faculty/profile', icon: User },
   ];

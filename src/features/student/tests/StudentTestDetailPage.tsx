@@ -14,7 +14,9 @@ import {
   Code,
   ArrowLeft,
   Info,
+  Tag,
 } from 'lucide-react';
+import { DifficultyBadge } from './StudentTestListPage';
 
 export function StudentTestDetailPage({ testId }: { testId: string }) {
   const { navigate } = useRouter();
@@ -60,22 +62,42 @@ export function StudentTestDetailPage({ testId }: { testId: string }) {
 
       {/* Main Details Card */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-6 sm:p-8 shadow-xs space-y-6">
-        <div className="space-y-2 pb-6 border-b border-slate-100 dark:border-slate-800">
-          <div className="flex items-center gap-2">
+        <div className="space-y-3 pb-6 border-b border-slate-100 dark:border-slate-800">
+          <div className="flex items-center gap-2 flex-wrap">
             <span className="font-mono text-2xs font-bold text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-950/60 px-2 py-0.5 rounded">
               {test.type} ASSESSMENT
             </span>
             <span className="text-xs text-slate-400">·</span>
-            <span className="text-xs text-slate-500 dark:text-slate-400">{test.subject}</span>
+            <DifficultyBadge difficulty={test.difficulty || 'Intermediate'} />
+            <span className="text-xs text-slate-400">·</span>
+            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">{test.subject}</span>
           </div>
 
           <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
             {test.title}
           </h1>
 
-          <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed pt-1">
+          <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed pt-0.5">
             {test.description}
           </p>
+
+          {/* Subject & Topic Tags */}
+          {test.tags && test.tags.length > 0 && (
+            <div className="flex items-center gap-1.5 flex-wrap pt-1">
+              <span className="text-2xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                <Tag className="w-3 h-3" />
+                Topics:
+              </span>
+              {test.tags.map((t) => (
+                <span
+                  key={t}
+                  className="px-2.5 py-0.5 rounded text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700"
+                >
+                  #{t}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Core Parameters Grid */}

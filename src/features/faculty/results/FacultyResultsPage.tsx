@@ -172,6 +172,14 @@ export function FacultyResultsPage({ testId }: { testId?: string }) {
             <BarChart3 className="w-3.5 h-3.5" />
             <span>Performance & Difficulty Visualizations</span>
           </button>
+
+          <button
+            onClick={() => navigate('/faculty/proctoring')}
+            className="px-3.5 py-1.5 text-xs font-semibold rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:text-red-700 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors flex items-center gap-1.5"
+          >
+            <ShieldAlert className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
+            <span>Proctoring Incident Logs</span>
+          </button>
         </div>
       </div>
 
